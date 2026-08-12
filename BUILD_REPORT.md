@@ -142,3 +142,74 @@ Font: Kanit (already wired in root `layout.tsx` via `next/font/google`).
 5. **Pre-existing server note** — a server was already listening on port 3000 before this work
    began (PID 23180, not started by this task). The build and the runtime smoke test both succeeded
    independently of it.
+
+---
+
+# Phase 2: Consumer App — 10 Core Pages
+
+**Date:** 2026-08-13
+**Scope:** Consumer home + search + diagnosis (8-phase) + concierge (8-phase) + documents + tax + lawyers + profile + pricing + notifications
+**Build status:** ✅ `npm run build` — 0 errors, 0 type errors, 14 static pages generated
+**Runtime:** ✅ `next start` → all 10 pages return HTTP 200; content spot-checks pass
+
+## Routing decision (documented)
+
+`app/(marketing)/page.tsx` already owns `/` (the landing page). `app/(consumer)/page.tsx`
+would collide with it on `/` and fail the build ("two parallel pages resolving to the same path").
+Resolution: the consumer home dashboard lives at **`/home`** (`app/(consumer)/home/page.tsx`) and
+`CONSUMER_NAV` "หน้าหลัก" now points to `/home`. All other consumer pages live at their own
+distinct paths (`/search`, `/diagnosis`, `/concierge`, `/documents`, `/tax`, `/lawyers`,
+`/profile`, `/pricing`, `/notifications`). This mirrors the Phase 1 note that the consumer home
+would be "routed behind auth/middleware" — pending a real middleware, `/home` is the working index.
+
+## Pages built (all under `app/(consumer)/`)
+
+| Page | Route | Type | Key states |
+|------|-------|------|------------|
+| Home dashboard | `/home` | Server | welcome + fear-calibration entry, search box → `/search`, 12-category grid, active cases, social proof |
+| AI search | `/search` | Client | idle / loading spinner / result (answer + sources + next steps) / error; document sidebar; disclaimer |
+| Diagnosis wizard | `/diagnosis` | Client | 8-phase progress, 4 fear levels, category → questions → AI analysis (loading/error/success) |
+| Concierge flow | `/concierge` | Client | 8-phase container, monetization gate at phase 3 (locks 4–8 on free plan) |
+| Document library | `/documents` | Client | search + 10 category grid + cards; loading / empty / error |
+| Tax calculator | `/tax` | Client | income + deduction checkboxes → result card; loading / error; brackets; cite รัษฎากร |
+| Lawyer marketplace | `/lawyers` | Client | search + specialty/province/sort filters; neutral (no ranking); loading / empty / error |
+| Profile | `/profile` | Client | info form (save confirm), package display, settings tabs; loading / error |
+| Pricing | `/pricing` | Server | 4 tier cards + 17-row comparison table from `lib/packages/definitions.ts` |
+| Notifications | `/notifications` | Client | filter tabs (all/unread/case/system), mark-read, empty / loading / error |
+
+## New data modules
+
+| File | Purpose |
+|------|---------|
+| `lib/legal/sources.ts` | 9 real Thai law sources + `sourceForCategory()` + `cite()` — backs every citation |
+| `lib/legal/search.ts` | `matchCategory()` keyword matcher + `buildSearchResult()` warm sourced mock answer |
+| `lib/legal/tax.ts` | 8 progressive brackets, 10 deductions, `calculateTax()` |
+| `lib/documents/categories.ts` | 10 document categories + 12 templates |
+| `lib/lawyers.ts` | 8 neutral lawyer profiles + specialty/province helpers |
+
+## Guardrail compliance
+
+- Every legal claim cites a registered source (`ป.อาญา ม.341`, `ป.พ.พ. ม.420`, `พ.ร.บ.คุ้มครองแรงงาน ม.118`, etc.) — no fabricated sections.
+- "No lawyer ranking" — marketplace is neutral (user-chosen sort), with an explicit neutral notice.
+- "Warn perjury" — concierge phase 7 shows the มาตรา 177 warning.
+- AI disclosure + legal disclaimer present on search/diagnosis/concierge/documents/tax/lawyers.
+- Warm, empathetic Thai copy throughout ("เราเข้าใจ", "คุณไม่ได้อยู่คนเดียว").
+
+## Files created / modified
+
+**Created (15 files):**
+- `app/(consumer)/home/page.tsx`, `search/page.tsx`, `diagnosis/page.tsx`, `concierge/page.tsx`,
+  `documents/page.tsx`, `tax/page.tsx`, `lawyers/page.tsx`, `profile/page.tsx`,
+  `pricing/page.tsx`, `notifications/page.tsx`
+- `lib/legal/sources.ts`, `lib/legal/search.ts`, `lib/legal/tax.ts`,
+  `lib/documents/categories.ts`, `lib/lawyers.ts`
+
+**Modified:**
+- `config/navigation.ts` — consumer nav: หน้าหลัก → `/home`, added วินิจฉัย/ภาษี/ทนายความ/ราคา/แจ้งเตือน
+
+## Verification
+
+- ✅ `npm run build` — exit 0, TypeScript clean, 14/14 static pages generated.
+- ✅ Runtime: all 10 consumer routes return HTTP 200.
+- ✅ Content spot-checks: `/home` (categories, cases), `/pricing` (Action Pack/Case Plus/SME),
+  `/search` (heading + doc sidebar), `/diagnosis` (phases), `/tax` (รัษฎากร), `/lawyers` (heading).

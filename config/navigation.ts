@@ -24,11 +24,15 @@ export const MARKETING_NAV: NavItem[] = [
 ];
 
 export const CONSUMER_NAV: NavItem[] = [
-  { label: "หน้าหลัก", href: "/", icon: "🏠" },
-  { label: "เคส", href: "/concierge", icon: "📋" },
-  { label: "AI", href: "/search", icon: "🤖", description: "AI ค้นหากฎหมาย" },
+  { label: "หน้าหลัก", href: "/home", icon: "🏠" },
+  { label: "วินิจฉัย", href: "/diagnosis", icon: "🩺", description: "วินิจฉัยปัญหา 8 ขั้นตอน" },
+  { label: "ค้นหา AI", href: "/search", icon: "🤖", description: "AI ค้นหากฎหมาย" },
+  { label: "Concierge", href: "/concierge", icon: "🧭", description: "นำทางทีละขั้นจนจบ" },
   { label: "เอกสาร", href: "/documents", icon: "📄" },
-  { label: "Concierge", href: "/concierge/new", icon: "🧭" },
+  { label: "ภาษี", href: "/tax", icon: "💸" },
+  { label: "ทนายความ", href: "/lawyers", icon: "⚖️" },
+  { label: "ราคา", href: "/pricing", icon: "💰" },
+  { label: "แจ้งเตือน", href: "/notifications", icon: "🔔" },
   { label: "โปรไฟล์", href: "/profile", icon: "👤" },
 ];
 
