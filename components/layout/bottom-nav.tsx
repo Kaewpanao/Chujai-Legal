@@ -15,8 +15,8 @@ export interface BottomNavProps {
 export function BottomNav({ items, maxItems = 5, className }: BottomNavProps) {
   const pathname = usePathname();
 
-  const isActive = (href: string) => {
-    if (href === "/") return pathname === "/";
+  const isActive = (href: string, exact?: boolean) => {
+    if (exact || href === "/") return pathname === href;
     return pathname === href || pathname.startsWith(`${href}/`);
   };
 
@@ -29,7 +29,7 @@ export function BottomNav({ items, maxItems = 5, className }: BottomNavProps) {
       aria-label="เมนูหลัก (มือถือ)"
     >
       {items.slice(0, maxItems).map((item) => {
-        const active = isActive(item.href);
+        const active = isActive(item.href, item.exact);
         return (
           <Link
             key={item.href}

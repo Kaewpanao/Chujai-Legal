@@ -24,8 +24,8 @@ export default function AdminLayout({
 
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar
-          title="ภาพรวมแพลตฟอร์ม"
-          subtitle="ตัวชี้วัดและสถานะระบบล่าสุด"
+          title="แผงควบคุมแอดมิน"
+          subtitle="ภาพรวมและจัดการแพลตฟอร์ม"
           notifications={12}
           userName="ผู้ดูแลระบบ"
           userRole="Administrator"

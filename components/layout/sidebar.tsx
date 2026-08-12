@@ -30,8 +30,8 @@ export function Sidebar({
 }: SidebarProps) {
   const pathname = usePathname();
 
-  const isActive = (href: string) => {
-    if (href === "/") return pathname === "/";
+  const isActive = (href: string, exact?: boolean) => {
+    if (exact || href === "/") return pathname === href;
     return pathname === href || pathname.startsWith(`${href}/`);
   };
 
@@ -63,7 +63,7 @@ export function Sidebar({
       <nav className="flex-1 overflow-y-auto p-3">
         <ul className="flex flex-col gap-1">
           {items.map((item) => {
-            const active = isActive(item.href);
+            const active = isActive(item.href, item.exact);
             return (
               <li key={item.href}>
                 <Link

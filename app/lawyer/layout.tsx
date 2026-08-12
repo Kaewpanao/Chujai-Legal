@@ -24,8 +24,8 @@ export default function LawyerLayout({
 
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar
-          title="แดชบอร์ดทนาย"
-          subtitle="ภาพรวมเคสและลูกความของคุณ"
+          title="แอปสำหรับทนายความ"
+          subtitle="จัดการเคส ลูกความ และการเงินของคุณ"
           notifications={5}
           userName="ทนายสมหมาย"
           userRole="ทนายความที่ผ่านการยืนยัน"
