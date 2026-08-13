@@ -213,3 +213,109 @@ would be "routed behind auth/middleware" — pending a real middleware, `/home` 
 - ✅ Runtime: all 10 consumer routes return HTTP 200.
 - ✅ Content spot-checks: `/home` (categories, cases), `/pricing` (Action Pack/Case Plus/SME),
   `/search` (heading + doc sidebar), `/diagnosis` (phases), `/tax` (รัษฎากร), `/lawyers` (heading).
+
+---
+
+# Phase 4 + 5: API Routes + Integration Layer
+
+**Date:** 2026-08-13
+**Scope:** AI / auth / cases / documents / payments / tax API routes + AI provider (DeepSeek) + Supabase clients + LINE & Omise integrations
+**Build status:** ✅ `npm run build` — 0 errors, 0 type errors, 16 API routes registered
+**Runtime:** ✅ `next start` → all routes smoke-tested; graceful fallback verified (no env keys set)
+
+## Design decision — zero new dependencies
+
+The project ships **no `@supabase/supabase-js`, `@ai-sdk/*`, or Omise/LINE SDKs**.
+Every integration is a thin **native `fetch`** wrapper. Rationale: keeps `npm run build`
+hermetic (no network install), and every wrapper degrades to a deterministic local
+mock when its env key is unset — so the whole API layer runs end-to-end offline.
+
+## API routes built (`app/api/`)
+
+| Route | Method | Behavior |
+|-------|--------|----------|
+| `/api/ai/diagnose` | POST | Case answers → DeepSeek → legal analysis (summary, rights, options, urgentSteps, sources). Guardrail-checked; falls back to a source-cited analysis from the legal data layer |
+| `/api/ai/search` | POST | Free-text query → DeepSeek → answer + sources + next steps; falls back to `buildSearchResult()` |
+| `/api/ai/generate` | POST | Template + merge fields → DeepSeek-polished document; falls back to merged template |
+| `/api/ai/assistant` | POST | Multi-turn chat with context; canned warm reply when unconfigured |
+| `/api/auth/login` | POST | Email/password via Supabase GoTrue; sets `chujai-access-token`/`refresh-token` cookies; mock demo session fallback |
+| `/api/auth/register` | POST | Supabase signup; mock fallback |
+| `/api/auth/line` | GET | LINE Login: redirects to OAuth URL, or exchanges `code` → profile → session; mock fallback |
+| `/api/cases` | GET/POST | List / create cases (Supabase `cases` table or in-memory mock store) |
+| `/api/cases/[caseId]` | GET/PUT/DELETE | CRUD one case |
+| `/api/documents/generate` | POST | Merge template + persist document (AI polish optional) |
+| `/api/documents/[docId]` | GET | Fetch one document |
+| `/api/payments/create` | POST | Omise PromptPay source + charge (QR); mock intent fallback |
+| `/api/payments/webhook` | POST | Verify Omise webhook (HMAC when `OMISE_WEBHOOK_SECRET` set) → update payment status |
+| `/api/payments/verify` | POST | Retrieve charge status (Omise or mock) |
+| `/api/tax/calculate` | POST | `calculateTax()` + brackets + cites ประมวลรัษฎากร ม.40/47 |
+| `/api/tax/optimize` | POST | DeepSeek deduction suggestions; rule-based fallback from `TAX_DEDUCTIONS` |
+
+## Integration layer (`lib/`)
+
+| File | Purpose |
+|------|---------|
+| `lib/ai/deepseek.ts` | DeepSeek client (`chat`, `generate`, `parseJsonFromText`) — real OpenAI-compatible call, `AbortSignal.timeout`, typed `DeepSeekError`, `live`/`fallbackReason` result |
+| `lib/ai/prompt.ts` | System prompt (warm Thai + guardrail block + fear-calibration tone) + diagnosis/search/document/assistant/tax prompt builders |
+| `lib/legal/guardrails-check.ts` | Runtime checker: regex-maps must-never violations (outcome prediction, false promise, direct advice, lawyer ranking, fabricated citations) → `{ violations, blocked }` |
+| `lib/supabase/rest.ts` | Fetch-based Supabase core (GoTrue auth + PostgREST CRUD), `{ data, error }` result envelope, `not_configured` sentinel |
+| `lib/supabase/client.ts` | Browser client (`NEXT_PUBLIC_*`) |
+| `lib/supabase/server.ts` | Server client (service-role key preferred) |
+| `lib/supabase/middleware.ts` | `updateSession()` auth middleware helper (cookie refresh; no-op when unconfigured) |
+| `lib/line/notify.ts` | LINE Messaging API (`pushMessage`/`replyMessage`/`broadcast`) + LINE Login helpers (`buildLineAuthUrl`/`exchangeLineCode`) |
+| `lib/payments/omise.ts` | Omise wrapper: PromptPay source, charge, retrieve, HMAC webhook verify; mock fallbacks |
+| `lib/documents/templates.ts` | 12 real Thai legal-document bodies with `{{field}}` placeholders |
+| `lib/documents/merge.ts` | Merge engine + standard disclaimer + unresolved-field tracking |
+| `lib/mock/store.ts` | In-memory mock store (cases / documents / payments) for offline dev |
+| `lib/api.ts` | Shared route helpers (`json`, `error`, `unauthorized`, `readJson`, `bearerToken`) |
+
+## Guardrail compliance
+
+- Every AI route runs `checkGuardrails()` on the model output and **blocks** on any
+  must-never violation (substitutes a safe data-layer answer).
+- Every generated document appends the "ไม่ใช่คำปรึกษาทางกฎหมาย" disclaimer (always-disclaimer).
+- Every legal claim is source-cited (ป.อาญา, ป.พ.พ., พ.ร.บ.คุ้มครองแรงงาน, ประมวลรัษฎากร, …) — no fabricated sections.
+- Police-report template embeds the ป.อาญา ม.177 (แจ้งความเท็จ) warning (warn-perjury).
+- Thai-first, warm, empathetic copy throughout.
+
+## Files created / modified
+
+**Created (24 files):**
+- `app/api/ai/{diagnose,search,generate,assistant}/route.ts`
+- `app/api/auth/{login,register,line}/route.ts`
+- `app/api/cases/route.ts`, `app/api/cases/[caseId]/route.ts`
+- `app/api/documents/generate/route.ts`, `app/api/documents/[docId]/route.ts`
+- `app/api/payments/{create,webhook,verify}/route.ts`
+- `app/api/tax/{calculate,optimize}/route.ts`
+- `lib/ai/deepseek.ts`, `lib/ai/prompt.ts`
+- `lib/legal/guardrails-check.ts`
+- `lib/supabase/{rest,client,server,middleware}.ts`
+- `lib/line/notify.ts`, `lib/payments/omise.ts`
+- `lib/documents/templates.ts`, `lib/documents/merge.ts`
+- `lib/mock/store.ts`, `lib/api.ts`, `.env.example`
+
+**Modified:** none (purely additive).
+
+## Verification
+
+- ✅ `npm run build` — exit 0, TypeScript clean; all 16 API routes registered as `ƒ` (dynamic).
+- ✅ Runtime smoke tests (no env keys → full mock/fallback path):
+  - `/api/ai/search` → sourced Thai answer + next steps
+  - `/api/ai/diagnose` → fear-calibrated summary + rights + sources
+  - `/api/tax/calculate` → correct progressive tax (600k → ฿6,549.95)
+  - `/api/auth/login` + `/register` → mock sessions
+  - `/api/payments/create` → mock PromptPay intent + QR
+  - `/api/documents/generate` → merged document (unresolved fields tracked)
+  - `/api/cases` GET/POST + DELETE, `/api/documents/[docId]` GET, `/api/payments/webhook` → all 200
+
+## Notes
+
+1. **Auth is "soft" on data routes** — cases/documents read an optional bearer token /
+   cookie to tag `userId`, but don't hard-block unauthenticated requests, so the API
+   stays usable without Supabase. Route-level RBAC is a later phase.
+2. **`params` are Promises** in Next 16 — all dynamic routes `await params` (breaking
+   change vs. Next 14/15 sync params).
+3. **`server-only` package is not installed**, so `lib/supabase/server.ts` documents its
+   server-only contract via a comment instead of a hard import.
+4. **`next start` runs on 127.0.0.1** — the default `::` (IPv6) bind fails with
+   `EADDRNOTAVAIL` in this Windows environment; use `-H 127.0.0.1`.
