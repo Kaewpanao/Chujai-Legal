@@ -55,11 +55,17 @@ export async function POST(req: Request) {
   // 1) Try DeepSeek.
   try {
     const system = buildSystemPrompt(fearLevelId);
+    const source = sourceForCategory(category.id);
+    const sourceContext = source
+      ? `${source.name} (${source.shortName}) · หมวด: ${source.domain}\n` +
+        source.sections.map((s) => `- ${s.ref} — ${s.label}`).join("\n")
+      : "";
     const user = buildDiagnosisPrompt({
       categoryTitle: category.title,
       subProblem: body.subProblem,
       answers,
       fearLevelId,
+      sourceContext,
     });
     const result = await generate(system, user);
 
