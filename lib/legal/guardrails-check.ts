@@ -32,7 +32,11 @@ const PATTERNS: { id: string; pattern: RegExp }[] = [
   },
   {
     id: "no-false-promise",
-    pattern: /(รับประกัน|การันตี|รับรองว่า|การันตีว่า|ชนะ 100)/i,
+    // Match promise phrases ("รับประกันว่า…") only — NOT the noun "ผู้รับประกันภัย"
+    // / "บริษัทรับประกันภัย" / "สัญญาประกันภัย" which appear in every insurance answer.
+    // "รับรองว่า" alone is too broad ("กฎหมายรับรองว่าคุณมีสิทธิ" is a legal fact,
+    // not a promise) — so only match the outcome-promise form.
+    pattern: /(รับประกันว่า|รับประกันผล|รับประกันความสำเร็จ|รับประกันได้|การันตี|การันตีว่า|รับรองว่าชนะ|ชนะ\s*100)/i,
   },
   {
     id: "no-legal-advice",
@@ -44,7 +48,9 @@ const PATTERNS: { id: string; pattern: RegExp }[] = [
   },
   {
     id: "no-fabricated-citations",
-    pattern: /(มาตรา\s*999|มาตรา\s*0+\b|มาตรา\s*\d{4,})/i,
+    // Legit Thai section numbers are 1-4 digits (e.g. มาตรา 1474, 1516); only
+    // flag obvious fabrications: the fake "999", "000…", or 5+ digit numbers.
+    pattern: /(มาตรา\s*999\b|มาตรา\s*0+\b|มาตรา\s*\d{5,})/i,
   },
 ];
 
