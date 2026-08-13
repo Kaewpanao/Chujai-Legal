@@ -75,13 +75,18 @@ export async function POST(req: Request) {
 
     if (result.live && result.content) {
       const parsed = parseJsonFromText<SearchOutput>(result.content);
-      if (parsed?.answer && !isEvasive(parsed.answer)) {
+      // If DeepSeek returned plain prose instead of JSON, wrap it as an answer.
+      const answer = parsed?.answer || result.content.trim();
+      if (answer && answer.length > 30 && !isEvasive(answer)) {
         const check = checkGuardrails(result.content);
         // Reject only citations that reference a section outside our registry.
-        const fabricated = parsed.sources?.some((s) => s.ref && !refs.has(s.ref));
+        const fabricated = parsed?.sources?.some((s) => s.ref && !refs.has(s.ref));
         if (!check.blocked && !fabricated) {
           return json({
-            ...parsed,
+            answer,
+            sources: parsed?.sources ?? [],
+            nextSteps: parsed?.nextSteps ?? [],
+            categoryId: parsed?.categoryId ?? match?.categoryId,
             matched: true,
             aiGenerated: true,
             model: result.model,
