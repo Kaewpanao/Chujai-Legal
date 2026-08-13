@@ -12,9 +12,25 @@ export interface DiagnosisSource {
   label: string;
 }
 
+/** One do-it-yourself step, rendered as a warm numbered card. */
+export interface DiagnosisStep {
+  step: string;
+  title: string;
+  detail: string;
+  emoji?: string;
+}
+
 export interface DiagnosisResult {
+  /** Warm, empathetic opening (1-2 sentences — "เราเข้าใจ", "ไม่เป็นไรนะ"). */
+  empathy: string;
+  /** Plain-language situation summary (1-2 sentences). */
   summary: string;
   category: string;
+  /** Do-it-yourself steps, one by one, warm with emoji. */
+  stepByStep: DiagnosisStep[];
+  /** Encouragement + social proof ("เราเคยช่วยคนแบบนี้มาแล้ว …"). */
+  reassurance: string;
+  /** Short, warm rights that explain what they mean (not bare law citations). */
   rights: string[];
   options: string[];
   urgentSteps: string[];

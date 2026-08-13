@@ -444,21 +444,47 @@ export default function ConciergePage() {
                   </div>
                 </div>
 
+                {/* 1. Empathy opening — big and warm */}
+                {analysis.empathy && (
+                  <p className="rounded-2xl bg-blue-50/70 px-4 py-3 text-base font-semibold leading-relaxed text-ink">
+                    💙 {analysis.empathy}
+                  </p>
+                )}
+
                 <p className="rounded-xl bg-canvas px-4 py-3 text-sm leading-relaxed text-ink/90">
                   {analysis.summary}
                 </p>
 
-                {analysis.urgentSteps.length > 0 && (
-                  <div className="rounded-xl bg-amber/10 px-4 py-3">
-                    <p className="text-sm font-semibold text-amber">⚡ ขั้นตอนเร่งด่วน</p>
-                    <ul className="mt-1 flex flex-col gap-1">
-                      {analysis.urgentSteps.map((s, i) => (
-                        <li key={i} className="text-sm text-ink/85">• {s}</li>
+                {/* 2. Step-by-step — numbered warm cards */}
+                {analysis.stepByStep?.length > 0 && (
+                  <div>
+                    <p className="mb-2 text-sm font-semibold text-ink">📋 ขั้นตอนที่คุณทำเองได้</p>
+                    <ol className="flex flex-col gap-2">
+                      {analysis.stepByStep.map((s, i) => (
+                        <li key={i} className="flex items-start gap-3 rounded-xl border border-line bg-white px-3 py-2.5">
+                          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-blue text-xs font-semibold text-white">
+                            {s.step || i + 1}
+                          </span>
+                          <span className="flex-1">
+                            <span className="block text-sm font-semibold text-ink">
+                              {s.emoji ? `${s.emoji} ` : ""}{s.title}
+                            </span>
+                            <span className="block text-sm leading-relaxed text-muted">{s.detail}</span>
+                          </span>
+                        </li>
                       ))}
-                    </ul>
+                    </ol>
                   </div>
                 )}
 
+                {/* 3. Reassurance + social proof */}
+                {analysis.reassurance && (
+                  <p className="rounded-xl bg-green/10 px-4 py-3 text-sm font-medium leading-relaxed text-ink/90">
+                    💪 {analysis.reassurance}
+                  </p>
+                )}
+
+                {/* 4. Rights — warm */}
                 <div>
                   <p className="text-sm font-semibold text-ink">🛡️ สิทธิของคุณ</p>
                   <ul className="mt-1 flex flex-col gap-1">
@@ -479,15 +505,30 @@ export default function ConciergePage() {
                   </div>
                 )}
 
+                {/* 5. Laws as supporting references — small, at the bottom */}
                 {analysis.sources.length > 0 && (
                   <div>
-                    <p className="text-sm font-semibold text-ink">📚 กฎหมายที่เกี่ยวข้อง</p>
+                    <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">
+                      📚 อ้างอิงกฎหมาย (หลักฐานสนับสนุน)
+                    </p>
                     <ul className="mt-1 flex flex-col gap-1">
                       {analysis.sources.map((s, i) => (
-                        <li key={i} className="rounded-lg bg-canvas px-3 py-2 text-xs text-ink/80">
+                        <li key={i} className="rounded-lg bg-canvas px-3 py-1.5 text-xs text-muted">
                           <span className="font-medium text-blue-dark">{s.lawName}</span>
                           {s.ref ? ` ${s.ref}` : ""} — {s.label}
                         </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* 6. Urgent steps (if any) */}
+                {analysis.urgentSteps.length > 0 && (
+                  <div className="rounded-xl bg-amber/10 px-4 py-3">
+                    <p className="text-sm font-semibold text-amber">⚡ ขั้นตอนเร่งด่วน</p>
+                    <ul className="mt-1 flex flex-col gap-1">
+                      {analysis.urgentSteps.map((s, i) => (
+                        <li key={i} className="text-sm text-ink/85">• {s}</li>
                       ))}
                     </ul>
                   </div>

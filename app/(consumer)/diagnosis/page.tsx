@@ -9,7 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { LoadingSpinner } from "@/components/shared/loading-spinner";
 import { LegalDisclaimer } from "@/components/shared/legal-disclaimer";
 import { LEGAL_CATEGORIES, getCategoryById } from "@/lib/legal/categories";
-import { FEAR_LEVELS, getFearLevel } from "@/lib/legal/fear-calibration";
+import { FEAR_LEVELS } from "@/lib/legal/fear-calibration";
 import { getQuestions, type DiagnosisQuestion } from "@/lib/legal/questions";
 import { runDiagnosis, type DiagnosisResult } from "@/lib/legal/diagnosis";
 import { cn } from "@/lib/utils";
@@ -51,7 +51,6 @@ export default function DiagnosisPage() {
     }
   }, []);
 
-  const fear = fearId ? getFearLevel(fearId) : null;
   const category = categoryId ? getCategoryById(categoryId) : null;
   const questions: DiagnosisQuestion[] = category ? getQuestions(category.id) : [];
 
@@ -399,6 +398,11 @@ export default function DiagnosisPage() {
                     </p>
                   </div>
                 </div>
+                {result.empathy && (
+                  <p className="rounded-2xl bg-blue-50/70 px-4 py-3 text-base font-semibold leading-relaxed text-ink">
+                    💙 {result.empathy}
+                  </p>
+                )}
                 <p className="rounded-xl bg-canvas px-4 py-3 text-sm leading-relaxed text-ink/90">{result.summary}</p>
                 {result.urgentSteps.length > 0 && (
                   <div className="rounded-xl bg-amber/10 px-4 py-3">
@@ -422,28 +426,71 @@ export default function DiagnosisPage() {
         </Card>
       )}
 
-      {/* PHASE 4 — rights (from AI result) */}
+      {/* PHASE 4 — rights + warm result (from AI result) */}
       {phase === 4 && category && result && (
         <Card variant="base">
           <CardHeader>
-            <CardTitle>สิทธิของคุณ {category.icon}</CardTitle>
+            <CardTitle>สิทธิและขั้นตอนของคุณ {category.icon}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            <p className="text-sm leading-relaxed text-ink/90">
-              จากหมวด “{category.title}” กฎหมายไทยให้ความคุ้มครองคุณ —
-              {fear ? ` เราเข้าใจว่าคุณ${fear.label} เรื่องนี้จัดการได้แน่นอน` : " เรื่องนี้จัดการได้แน่นอน"}
-            </p>
-            <ul className="flex flex-col gap-2">
-              {result.rights.map((r, i) => (
-                <li key={i} className="rounded-lg bg-blue-50/60 px-3 py-2 text-sm text-ink/85">• {r}</li>
-              ))}
-            </ul>
+            {/* 1. Empathy opening — big and warm */}
+            {result.empathy && (
+              <p className="rounded-2xl bg-blue-50/70 px-4 py-3 text-base font-semibold leading-relaxed text-ink">
+                💙 {result.empathy}
+              </p>
+            )}
+            <p className="text-sm leading-relaxed text-ink/90">{result.summary}</p>
+
+            {/* 2. Step-by-step — numbered warm cards */}
+            {result.stepByStep?.length > 0 && (
+              <div>
+                <p className="mb-2 text-sm font-semibold text-ink">📋 ขั้นตอนที่คุณทำเองได้</p>
+                <ol className="flex flex-col gap-2">
+                  {result.stepByStep.map((s, i) => (
+                    <li key={i} className="flex items-start gap-3 rounded-xl border border-line bg-white px-3 py-2.5">
+                      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-blue text-xs font-semibold text-white">
+                        {s.step || i + 1}
+                      </span>
+                      <span className="flex-1">
+                        <span className="block text-sm font-semibold text-ink">
+                          {s.emoji ? `${s.emoji} ` : ""}{s.title}
+                        </span>
+                        <span className="block text-sm leading-relaxed text-muted">{s.detail}</span>
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+
+            {/* 3. Reassurance + social proof */}
+            {result.reassurance && (
+              <p className="rounded-xl bg-green/10 px-4 py-3 text-sm font-medium leading-relaxed text-ink/90">
+                💪 {result.reassurance}
+              </p>
+            )}
+
+            {/* 4. Rights — warm, explained meaning */}
+            {result.rights.length > 0 && (
+              <div>
+                <p className="mb-1 text-sm font-semibold text-ink">🛡️ สิทธิของคุณ</p>
+                <ul className="flex flex-col gap-2">
+                  {result.rights.map((r, i) => (
+                    <li key={i} className="rounded-lg bg-blue-50/60 px-3 py-2 text-sm text-ink/85">• {r}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* 5. Laws as supporting references — small, at the bottom */}
             {result.sources.length > 0 && (
               <div>
-                <p className="mb-1 text-sm font-semibold text-ink">📚 กฎหมายที่เกี่ยวข้อง</p>
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">
+                  📚 อ้างอิงกฎหมาย (หลักฐานสนับสนุน)
+                </p>
                 <ul className="flex flex-col gap-1">
                   {result.sources.map((s, i) => (
-                    <li key={i} className="rounded-lg bg-canvas px-3 py-2 text-xs text-ink/80">
+                    <li key={i} className="rounded-lg bg-canvas px-3 py-1.5 text-xs text-muted">
                       <span className="font-medium text-blue-dark">{s.lawName}</span>
                       {s.ref ? ` ${s.ref}` : ""} — {s.label}
                     </li>
@@ -451,6 +498,19 @@ export default function DiagnosisPage() {
                 </ul>
               </div>
             )}
+
+            {/* 6. Urgent steps (if any) */}
+            {result.urgentSteps.length > 0 && (
+              <div className="rounded-xl bg-amber/10 px-4 py-3">
+                <p className="text-sm font-semibold text-amber">⚡ ขั้นตอนเร่งด่วน</p>
+                <ul className="mt-1 flex flex-col gap-1">
+                  {result.urgentSteps.map((s, i) => (
+                    <li key={i} className="text-sm text-ink/85">• {s}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             <LegalDisclaimer />
           </CardContent>
           <div className="flex justify-between p-5 pt-0">
